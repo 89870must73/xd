@@ -85,7 +85,7 @@ wget -O /etc/nginx/conf.d/vps.conf "https://raw.githubusercontent.com/ara-ranger
 # ExecStart=/sbin/iptab
 # Type=oneshot
 # RemainAfterExit=yes
-[Install]
+# [Install]
 WantedBy=network.target" > /etc/systemd/system/iptab.service
 echo '#!/bin/bash
 iptables -F

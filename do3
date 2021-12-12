@@ -860,38 +860,42 @@ sed -i 's/DROPBEAR_EXTRA_ARGS=/DROPBEAR_EXTRA_ARGS="-p 109 -p 110 -p 80"/g' /etc
 echo "/bin/false" >> /etc/shells
 /etc/init.d/dropbear restart
 
-# install stunnel
-apt-get install stunnel4 -y
-cat > /etc/stunnel/stunnel.conf <<-END
+apt-get -qq update
+apt-get -y -qq install stunnel4
+
+cat > /etc/stunnel/stunnel.conf <<-EOF
 cert = /etc/stunnel/stunnel.pem
 client = no
+
 socket = a:SO_REUSEADDR=1
 socket = l:TCP_NODELAY=1
 socket = r:TCP_NODELAY=1
 
-[dropbear]
+[dropbear service]
 accept = 443
 connect = 127.0.0.1:442
 
-[openvpn]
-accept = 990
-connect = 127.0.0.1:1103
+[openvpn service]
+accept = 1103
+connect = 127.0.0.1:990
 
-END
+# [shadowsocks-libev service]
+# accept = 2023
+# connect = 127.0.0.1:6561
+EOF
 
-# make a certificate
-openssl genrsa -out key.pem 2048
-openssl req -new -x509 -key key.pem -out cert.pem -days 1095 \
--subj "/C=$country/ST=$state/L=$locality/O=$organization/OU=$organizationalunit/CN=$commonname/emailAddress=$email"
-cat key.pem cert.pem >> /etc/stunnel/stunnel.pem
+openssl req -new -x509 -days 365 -nodes \
+-subj '/C=DO/ST=Dropbear/L=Debian/O="Cybertize"/OU="Cybertize Stunnel"/CN=cybertize.tk' \
+-out /etc/stunnel/stunnel.pem -keyout /etc/stunnel/stunnel.pem
+openssl dhparam 2048 >> /etc/stunnel/stunnel.pem
 
-# configure stunnel
-sed -i 's/ENABLED=0/ENABLED=1/g' /etc/default/stunnel4
-cd /etc/stunnel/
-wget -O /etc/stunnel/ssl.conf "https://raw.githubusercontent.com/azalea910512/kia/main/ssl/ssl.conf"
-sed -i $MYIP2 /etc/stunnel/ssl.conf;
-cp ssl.conf /home/vps/public_html/
-cd
+# /etc/default/stunnel
+echo 'ENABLED=1
+FILES="/etc/stunnel/*.conf"
+OPTIONS=""
+PPP_RESTART=0
+RLIMITS="-n 4096"' > /etc/default/stunnel4
+systemctl restart stunnel4
 
 #install badvpn deb/ubun
 apt-get install cmake make gcc -y
@@ -1041,11 +1045,7 @@ chown -R www-data:www-data /home/vps/public_html
 /etc/init.d/dropbear restart
 /etc/init.d/fail2ban restart
 /etc/init.d/stunnel4 restart
-service uwsgi restart
-systemctl daemon-reload
-systemctl restart v2-ui
 service squid restart
-service pptpd restart
 /etc/init.d/webmin restart
 
 # clearing history

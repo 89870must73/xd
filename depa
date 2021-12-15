@@ -586,7 +586,7 @@ fi
 
 #Create OpenVPN Config
 mkdir -p /home/vps/public_html
-cat > /etc/openvpn/tcp.ovpn <<EOF1
+cat > /etc/openvpn/client.ovpn <<EOF1
 # Modded by Gakod keningau
 client
 dev tun
@@ -633,39 +633,31 @@ $(cat /etc/openvpn/ta.key)
 </tls-auth>
 EOF1
 
-cat > /etc/openvpn/sam1.ovpn << EOF2
+cat > /etc/openvpn/udp.ovpn << EOF2
 # Created by Gakod keningau
 client
 dev tun
-proto tcp-client
-remote $MYIP 443
-http-proxy-retry
-http-proxy $MYIP 8080
-remote-cert-tls server
-bind
-float
-tun-mtu 1500
-tun-mtu-extra 32
-mssfix 1450
-mute-replay-warnings
-connect-retry-max 9999
-redirect-gateway def1
-connect-retry 0 1
+proto udp
+remote $IPADDR $OpenVPN_UDP_Port
 resolv-retry infinite
-setenv CLIENT_CERT 0
-persist-tun
+nobind
 persist-key
-auth-user-pass
-auth none
+persist-tun
+remote-cert-tls server
+verify-x509-name server_ADBtkp0yL46HLXPb name
+auth SHA256
 auth-nocache
-auth-retry interact
-cipher none
-keysize 0
-comp-lzo
-reneg-sec 0
-verb 0
-nice -20
-log /dev/null
+cipher AES-128-CBC
+tls-client
+tls-version-min 1.2
+tls-cipher TLS-DHE-RSA-WITH-AES-128-GCM-SHA256
+setenv opt block-outside-dns
+verb 3
+key-direction 1
+<auth-user-pass>
+sam
+sam
+</auth-user-pass>
 <ca>
 $(cat /etc/openvpn/ca.crt)
 </ca>
@@ -675,9 +667,9 @@ $(cat /etc/openvpn/server.crt)
 <key>
 $(cat /etc/openvpn/server.key)
 </key>
-<tls-auth-key>
-$(cat /etc/openvpn/ta.key)
-</tls-auth-key>
+<tls-auth>
+$(cat /etc/openvpn/tls-auth.key)
+</tls-auth>
 EOF2
 
 cat > /etc/openvpn/sam2.ovpn << EOF3
